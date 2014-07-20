@@ -45,6 +45,16 @@ my $body_dict = {
             template => 'Z*',
             attr_seq => [qw/system_id/],
         },
+        query_sm => {
+            id       => 0x00000003,
+            template => 'Z*CCZ*',
+            attr_seq => [qw/message_id source_addr_ton source_addr_npi source_addr/],
+        },
+        query_sm_resp => {
+            id       => 0x80000003,
+            template => 'Z*Z*CC',
+            attr_seq => [qw/message_id final_date message_state error_code/],
+        },
         submit_sm => {
             id       => 0x00000004,
             template => 'Z*CCZ*CCZ*CCCZ*Z*CCCCC',
@@ -81,7 +91,8 @@ my $body_dict = {
         },
         replace_sm => {
             id       => 0x00000007,
-# TODO
+            template => 'Z*CCZ*Z*Z*CCC',
+            attr_seq => [qw/message_id source_addr_ton source_addr_npi source_addr schedule_delivery_time validity_period registered_delivery sm_default_msg_id sm_length/],
         },
         replace_sm_resp => {
             id       => 0x80000007,
@@ -90,7 +101,8 @@ my $body_dict = {
         },
         cancel_sm => {
             id       => 0x00000008,
-# TODO
+            template => 'Z*Z*CCZ*CCZ*',
+            attr_seq => [qw/service_type message_id source_addr_ton source_addr_npi source_addr dest_addr_ton dest_addr_npi destination_addr/],
         },
         cancel_sm_resp => {
             id       => 0x80000008,
@@ -107,6 +119,11 @@ my $body_dict = {
             template => 'Z*',
             attr_seq => [qw/system_id/],
         },
+        outbind => {
+            id       => 0x0000000b,
+            template => 'Z*Z*',
+            attr_seq => [qw/system_id password/],
+        },
         enquire_link => {
             id       => 0x00000015,
             template => q{},
@@ -117,9 +134,23 @@ my $body_dict = {
             template => q{},
             attr_seq => [],
         },
+        submit_multi => {
+            id       => 0x00000021,
+            # TODO: non-trivial parsing
+        },
+        submit_multi_resp => {
+            id       => 0x80000021,
+            # TODO: non-trivial parsing
+        },
+        alert_notification => {
+            id       => 0x00000102,
+            template => 'CCZ*CCZ*',
+            attr_seq => [qw/source_addr_ton source_addr_npi source_addr esme_addr_ton esme_addr_npi esme_addr/],
+        },
         data_sm => {
             id       => 0x00000103,
-# TODO
+            template => 'Z*CCZ*CCZ*CCC',
+            attr_seq => [qw/service_type source_addr_ton source_addr_npi source_addr dest_addr_ton dest_addr_npi destination_addr esm_class registered_delivery data_coding/],
         },
         data_sm_resp => {
             id       => 0x80000103,
