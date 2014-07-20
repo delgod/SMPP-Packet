@@ -20,6 +20,11 @@ my $header_dict = {
 };
 my $body_dict = {
     0x34 => {
+        generic_nack => {
+            id       => 0x80000000,
+            template => q{},
+            attr_seq => [],
+        },
         bind_receiver => {
             id       => 0x00000001,
             template => 'Z*Z*Z*CCCZ*',
@@ -52,6 +57,46 @@ my $body_dict = {
             template => 'Z*',
             attr_seq => [qw/message_id/],
         },
+        deliver_sm => {
+            id       => 0x00000005,
+            template => 'Z*CCZ*CCZ*CCCZ*Z*CCCCC',
+            attr_seq => [
+                qw/service_type source_addr_ton source_addr_npi source_addr dest_addr_ton dest_addr_npi destination_addr esm_class protocol_id priority_flag schedule_delivery_time validity_period registered_delivery replace_if_present_flag data_coding sm_default_msg_id sm_length/
+            ],
+        },
+        deliver_sm_resp => {
+            id       => 0x80000005,
+            template => 'Z*',
+            attr_seq => [qw/message_id/],
+        },
+        unbind => {
+            id       => 0x00000006,
+            template => q{},
+            attr_seq => [],
+        },
+        unbind_resp => {
+            id       => 0x80000006,
+            template => q{},
+            attr_seq => [],
+        },
+        replace_sm => {
+            id       => 0x00000007,
+# TODO
+        },
+        replace_sm_resp => {
+            id       => 0x80000007,
+            template => q{},
+            attr_seq => [],
+        },
+        cancel_sm => {
+            id       => 0x00000008,
+# TODO
+        },
+        cancel_sm_resp => {
+            id       => 0x80000008,
+            template => q{},
+            attr_seq => [],
+        },
         bind_transceiver => {
             id       => 0x00000009,
             template => 'Z*Z*Z*CCCZ*',
@@ -62,15 +107,24 @@ my $body_dict = {
             template => 'Z*',
             attr_seq => [qw/system_id/],
         },
-        unbind => {
-            id       => 0x00000006,
+        enquire_link => {
+            id       => 0x00000015,
             template => q{},
             attr_seq => [],
         },
-        'bind' => {
-            id       => 0x00000009,
-            template => 'Z*Z*Z*CCCZ*',
-            attr_seq => [qw/system_id password system_type interface_version addr_ton addr_npi address_range/],
+        enquire_link_resp => {
+            id       => 0x80000015,
+            template => q{},
+            attr_seq => [],
+        },
+        data_sm => {
+            id       => 0x00000103,
+# TODO
+        },
+        data_sm_resp => {
+            id       => 0x80000103,
+            template => 'Z*',
+            attr_seq => [qw/message_id/],
         },
     },
 };
