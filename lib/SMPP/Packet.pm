@@ -59,7 +59,7 @@ my $body_dict = {
             id       => 0x00000004,
             template => 'Z*CCZ*CCZ*CCCZ*Z*CCCCC',
             attr_seq => [
-                qw/service_type source_addr_ton source_addr_npi source_addr dest_addr_ton dest_addr_npi destination_addr esm_class protocol_id priority_flag schedule_delivery_time validity_period registered_delivery replace_if_present_flag data_coding sm_default_msg_id sm_length/
+                qw/service_type source_addr_ton source_addr_npi source_addr dest_addr_ton dest_addr_npi destination_addr esm_class protocol_id priority_flag schedule_delivery_time validity_period registered_delivery replace_if_present_flag data_coding sm_default_msg_id sm_length short_message/
             ],
         },
         submit_sm_resp => {
@@ -71,7 +71,7 @@ my $body_dict = {
             id       => 0x00000005,
             template => 'Z*CCZ*CCZ*CCCZ*Z*CCCCC',
             attr_seq => [
-                qw/service_type source_addr_ton source_addr_npi source_addr dest_addr_ton dest_addr_npi destination_addr esm_class protocol_id priority_flag schedule_delivery_time validity_period registered_delivery replace_if_present_flag data_coding sm_default_msg_id sm_length/
+                qw/service_type source_addr_ton source_addr_npi source_addr dest_addr_ton dest_addr_npi destination_addr esm_class protocol_id priority_flag schedule_delivery_time validity_period registered_delivery replace_if_present_flag data_coding sm_default_msg_id sm_length short_message/
             ],
         },
         deliver_sm_resp => {
@@ -92,7 +92,7 @@ my $body_dict = {
         replace_sm => {
             id       => 0x00000007,
             template => 'Z*CCZ*Z*Z*CCC',
-            attr_seq => [qw/message_id source_addr_ton source_addr_npi source_addr schedule_delivery_time validity_period registered_delivery sm_default_msg_id sm_length/],
+            attr_seq => [qw/message_id source_addr_ton source_addr_npi source_addr schedule_delivery_time validity_period registered_delivery sm_default_msg_id sm_length short_message/],
         },
         replace_sm_resp => {
             id       => 0x80000007,
@@ -183,7 +183,7 @@ sub validate {
     }
 
     my $body_attr_ref = $body_dict->{ $data_ref->{'version'} }->{ $data_ref->{'command'} }->{'attr_seq'};
-    @missing_attr = grep { !exists $data_ref->{$_} } @{$body_attr_ref};
+    @missing_attr = grep { !exists $data_ref->{$_} and $_ ne 'sm_length' } @{$body_attr_ref};
     if ( scalar @missing_attr > 0 ) {
         warn 'following mandatory body fields are missing: ' . join( ', ', @missing_attr ) . "\n";
         return;
@@ -207,6 +207,11 @@ sub get_body_str {
     my ($data_ref) = @_;
     my $template   = $body_dict->{ $data_ref->{'version'} }->{ $data_ref->{'command'} }->{'template'};
     my $attr_seq   = $body_dict->{ $data_ref->{'version'} }->{ $data_ref->{'command'} }->{'attr_seq'};
+
+    if ( first { $_ eq 'short_message' } @{$attr_seq} ) {
+        $data_ref->{'sm_length'} = length $data_ref->{'short_message'};
+        $template .= 'a*'
+    }
     return pack $template, map { $data_ref->{$_} } @{$attr_seq};
 }
 
@@ -231,7 +236,10 @@ sub unpack_pdu {
 
     my $body_len = 0;
     foreach my $idx ( 0 .. $#{$attr_seq} ) {
-        $pdu{ ${$attr_seq}[$idx] } = $options[$idx];
+        my $attr_name = ${$attr_seq}[$idx];
+        next if $attr_name eq 'short_message';
+        $pdu{ $attr_name } = $options[$idx];
+
         my $attr_len = length $options[$idx];
         $body_len += $attr_len > 1 ? $attr_len + 1 : 1;
     }
