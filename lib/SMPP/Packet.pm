@@ -8,7 +8,7 @@ use List::Util qw/first/;
 
 use base qw(Exporter);
 our $VERSION     = '0.01';
-our %EXPORT_TAGS = ( 'all' => [qw{pack_pdu unpack_pdu}], );
+our %EXPORT_TAGS = ( 'all' => [qw{pack_pdu unpack_pdu hexdump}], );
 our @EXPORT_OK   = @{ $EXPORT_TAGS{'all'} };
 
 my $header_dict = {
