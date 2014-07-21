@@ -92,7 +92,9 @@ my $body_dict = {
         replace_sm => {
             id       => 0x00000007,
             template => 'Z*CCZ*Z*Z*CCC',
-            attr_seq => [qw/message_id source_addr_ton source_addr_npi source_addr schedule_delivery_time validity_period registered_delivery sm_default_msg_id sm_length short_message/],
+            attr_seq => [
+                qw/message_id source_addr_ton source_addr_npi source_addr schedule_delivery_time validity_period registered_delivery sm_default_msg_id sm_length short_message/
+            ],
         },
         replace_sm_resp => {
             id       => 0x80000007,
@@ -102,7 +104,9 @@ my $body_dict = {
         cancel_sm => {
             id       => 0x00000008,
             template => 'Z*Z*CCZ*CCZ*',
-            attr_seq => [qw/service_type message_id source_addr_ton source_addr_npi source_addr dest_addr_ton dest_addr_npi destination_addr/],
+            attr_seq => [
+                qw/service_type message_id source_addr_ton source_addr_npi source_addr dest_addr_ton dest_addr_npi destination_addr/
+            ],
         },
         cancel_sm_resp => {
             id       => 0x80000008,
@@ -135,11 +139,13 @@ my $body_dict = {
             attr_seq => [],
         },
         submit_multi => {
-            id       => 0x00000021,
+            id => 0x00000021,
+
             # TODO: non-trivial parsing
         },
         submit_multi_resp => {
-            id       => 0x80000021,
+            id => 0x80000021,
+
             # TODO: non-trivial parsing
         },
         alert_notification => {
@@ -150,7 +156,9 @@ my $body_dict = {
         data_sm => {
             id       => 0x00000103,
             template => 'Z*CCZ*CCZ*CCC',
-            attr_seq => [qw/service_type source_addr_ton source_addr_npi source_addr dest_addr_ton dest_addr_npi destination_addr esm_class registered_delivery data_coding/],
+            attr_seq => [
+                qw/service_type source_addr_ton source_addr_npi source_addr dest_addr_ton dest_addr_npi destination_addr esm_class registered_delivery data_coding/
+            ],
         },
         data_sm_resp => {
             id       => 0x80000103,
@@ -159,6 +167,44 @@ my $body_dict = {
         },
     },
 };
+
+my %default = (
+    version           => 0x34,
+    system_id         => '',      # 5.2.1, usually needs to be supplied
+    password          => '',      # 5.2.2
+    system_type       => '',      # 5.2.3, often optional, leave empty
+    interface_version => 0x34,    # 5.2.4
+    addr_ton          => 0x00,    # 5.2.5  type of number
+    addr_npi          => 0x00,    # 5.2.6  numbering plan indicator
+    address_range     => '',      # 5.2.7  regular expression matching numbers
+
+    ### Default values for submit_sm and deliver_sm
+    service_type            => '',      # NULL: SMSC defaults, #4> on v4 this is message_class <4#
+    source_addr_ton         => 0x00,    #? not known, see sec 5.2.5
+    source_addr_npi         => 0x00,    #? not known, see sec 5.2.6
+    source_addr             => '',      ## NULL: not known. You should set this for reply to work.
+    dest_addr_ton           => 0x00,    #??
+    dest_addr_npi           => 0x00,    #??
+    destination_addr        => '',      ### Destination address must be supplied
+    esm_class               => 0x00,    # Default mode (store and forward) and type (5.2.12, p.121)
+    protocol_id             => 0x00,    ### 0 works for TDMA & CDMA, for GSM set according to GSM 03.40
+    priority_flag           => 0,       # non-priority/bulk/normal
+    schedule_delivery_time  => '',      # NULL: immediate delivery
+    validity_period         => '',      # NULL: SMSC default validity period
+    registered_delivery     => 0x00,    # no receipt, no ack, no intermed notif
+    replace_if_present_flag => 0,       # no replacement
+    data_coding             => 0,       # SMSC default alphabet
+    sm_default_msg_id       => 0,       # Do not use canned message
+
+    ### default values for alert_notification
+    esme_addr_ton => 0x00,
+    esme_addr_npi => 0x00,
+
+    ### default values for query_sm_resp
+    final_date => '',                   # NULL: message has not yet reached final state
+    error_code => 0,                    # no error
+
+);
 
 sub pack_pdu {
     my ($data_ref) = @_;
@@ -175,17 +221,21 @@ sub pack_pdu {
 sub validate {
     my ($data_ref) = @_;
 
-    my @header_attr = qw/version command status seq/;
-    my @missing_attr = grep { !exists $data_ref->{$_} } @header_attr;
-    if ( scalar @missing_attr > 0 ) {
-        warn 'following mandatory header fields are missing: ' . join( ', ', @missing_attr ) . "\n";
-        return;
-    }
-
+    my @header_attr   = qw/version command status seq/;
     my $body_attr_ref = $body_dict->{ $data_ref->{'version'} }->{ $data_ref->{'command'} }->{'attr_seq'};
-    @missing_attr = grep { !exists $data_ref->{$_} and $_ ne 'sm_length' } @{$body_attr_ref};
+    my @missing_attr;
+    foreach my $mandatory_field ( @header_attr, @{$body_attr_ref} ) {
+        next if exists $data_ref->{$mandatory_field};
+        next if $mandatory_field eq 'sm_length';
+        if ( exists $default{$mandatory_field} ) {
+            $data_ref->{$mandatory_field} = $default{$mandatory_field};
+        }
+        else {
+            push @missing_attr, $mandatory_field;
+        }
+    }
     if ( scalar @missing_attr > 0 ) {
-        warn 'following mandatory body fields are missing: ' . join( ', ', @missing_attr ) . "\n";
+        warn 'following mandatory fields are missing: ' . join( ', ', @missing_attr ) . "\n";
         return;
     }
 
@@ -210,7 +260,11 @@ sub get_body_str {
 
     if ( first { $_ eq 'short_message' } @{$attr_seq} ) {
         $data_ref->{'sm_length'} = length $data_ref->{'short_message'};
-        $template .= 'a*'
+        $template .= 'a*';
+    }
+    if ( !defined $template ) {
+        warn "Unknown command: $data_ref->{'command'}\n";
+        return '';
     }
     return pack $template, map { $data_ref->{$_} } @{$attr_seq};
 }
@@ -222,23 +276,27 @@ sub unpack_pdu {
     my $head_templ = $header_dict->{ $data_ref->{'version'} }->{'template'};
     my $head_len   = $header_dict->{ $data_ref->{'version'} }->{'lenght'};
     ( $pdu{'length'}, $pdu{'command_id'}, $pdu{'status'}, $pdu{'seq'} ) = unpack $head_templ, $data_ref->{'data'};
-
     $pdu{'version'} = $data_ref->{'version'};
     $pdu{'command'} = get_command_name( $data_ref->{'version'}, $pdu{'command_id'} );
 
     if ( $pdu{'length'} <= $head_len ) {
         return \%pdu;
     }
-    my $body_str = substr $data_ref->{'data'}, $head_len;
     my $template = $body_dict->{ $data_ref->{'version'} }->{ $pdu{'command'} }->{'template'};
     my $attr_seq = $body_dict->{ $data_ref->{'version'} }->{ $pdu{'command'} }->{'attr_seq'};
-    my @options  = unpack $template, $body_str;
+    if ( !defined $template ) {
+        warn "Unknown command: $pdu{'command'}\n";
+        return \%pdu;
+    }
+
+    my $body_str = substr $data_ref->{'data'}, $head_len;
+    my @options = unpack $template, $body_str;
 
     my $body_len = 0;
     foreach my $idx ( 0 .. $#{$attr_seq} ) {
         my $attr_name = ${$attr_seq}[$idx];
         next if $attr_name eq 'short_message';
-        $pdu{ $attr_name } = $options[$idx];
+        $pdu{$attr_name} = $options[$idx];
 
         my $attr_len = length $options[$idx];
         $body_len += $attr_len > 1 ? $attr_len + 1 : 1;
