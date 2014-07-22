@@ -170,27 +170,27 @@ my $body_dict = {
 
 my %default = (
     version           => 0x34,
-    system_id         => '',      # 5.2.1, usually needs to be supplied
-    password          => '',      # 5.2.2
-    system_type       => '',      # 5.2.3, often optional, leave empty
+    system_id         => q{},     # 5.2.1, usually needs to be supplied
+    password          => q{},     # 5.2.2
+    system_type       => q{},     # 5.2.3, often optional, leave empty
     interface_version => 0x34,    # 5.2.4
     addr_ton          => 0x00,    # 5.2.5  type of number
     addr_npi          => 0x00,    # 5.2.6  numbering plan indicator
-    address_range     => '',      # 5.2.7  regular expression matching numbers
+    address_range     => q{},     # 5.2.7  regular expression matching numbers
 
     ### Default values for submit_sm and deliver_sm
-    service_type            => '',      # NULL: SMSC defaults, #4> on v4 this is message_class <4#
+    service_type            => q{},     # NULL: SMSC defaults, #4> on v4 this is message_class <4#
     source_addr_ton         => 0x00,    #? not known, see sec 5.2.5
     source_addr_npi         => 0x00,    #? not known, see sec 5.2.6
-    source_addr             => '',      ## NULL: not known. You should set this for reply to work.
+    source_addr             => q{},     ## NULL: not known. You should set this for reply to work.
     dest_addr_ton           => 0x00,    #??
     dest_addr_npi           => 0x00,    #??
-    destination_addr        => '',      ### Destination address must be supplied
+    destination_addr        => q{},     ### Destination address must be supplied
     esm_class               => 0x00,    # Default mode (store and forward) and type (5.2.12, p.121)
     protocol_id             => 0x00,    ### 0 works for TDMA & CDMA, for GSM set according to GSM 03.40
     priority_flag           => 0,       # non-priority/bulk/normal
-    schedule_delivery_time  => '',      # NULL: immediate delivery
-    validity_period         => '',      # NULL: SMSC default validity period
+    schedule_delivery_time  => q{},     # NULL: immediate delivery
+    validity_period         => q{},     # NULL: SMSC default validity period
     registered_delivery     => 0x00,    # no receipt, no ack, no intermed notif
     replace_if_present_flag => 0,       # no replacement
     data_coding             => 0,       # SMSC default alphabet
@@ -201,7 +201,7 @@ my %default = (
     esme_addr_npi => 0x00,
 
     ### default values for query_sm_resp
-    final_date => '',                   # NULL: message has not yet reached final state
+    final_date => q{},                  # NULL: message has not yet reached final state
     error_code => 0,                    # no error
 
 );
@@ -264,7 +264,7 @@ sub get_body_str {
     }
     if ( !defined $template ) {
         warn "Unknown command: $data_ref->{'command'}\n";
-        return '';
+        return q{};
     }
     return pack $template, map { $data_ref->{$_} } @{$attr_seq};
 }
@@ -314,15 +314,17 @@ sub get_command_name {
 }
 
 sub hexdump {
-    local ( $!, $@ );
-    no warnings qw(uninitialized);
-    while ( $_[0] =~ /(.{1,32})/smg ) {
+    my ($hex_str) = @_;
+    local ( $!, $@ ) = ( $!, $@ );
+    while ( $hex_str =~ /(.{1,32})/smg ) {
         my $line = $1;
-        my @c = ( ( map { sprintf "%02x", $_ } unpack( 'C*', $line ) ), ( ("  ") x 32 ) )[ 0 .. 31 ];
+        my @c = ( ( map { sprintf '%02x', $_ } unpack 'C*', $line ), ( (q{  }) x 32 ) )[ 0 .. 31 ];
         $line =~ s/(.)/ my $c=$1; unpack("c",$c)>=32 ? $c : '.' /egms;
-        print STDERR "$_[1] ", join( " ", @c, '|', $line ), "\n";
+        warn join( q{ }, @c, q{|}, $line ), "\n";
     }
-    print STDERR "\n";
+    warn "\n";
+
+    return;
 }
 
 1;
