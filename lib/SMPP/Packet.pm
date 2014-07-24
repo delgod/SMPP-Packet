@@ -272,6 +272,10 @@ sub get_body_str {
 sub unpack_pdu {
     my ($data_ref) = @_;
 
+    if ( !$data_ref->{'version'} ) {
+        $data_ref->{'version'} = $default{'version'};
+    }
+
     my %pdu;
     my $head_templ = $header_dict->{ $data_ref->{'version'} }->{'template'};
     my $head_len   = $header_dict->{ $data_ref->{'version'} }->{'lenght'};
@@ -283,6 +287,7 @@ sub unpack_pdu {
         return \%pdu;
     }
     my $template = $body_dict->{ $data_ref->{'version'} }->{ $pdu{'command'} }->{'template'};
+    my @template = split m/(?! [*] )/x, $template;
     my $attr_seq = $body_dict->{ $data_ref->{'version'} }->{ $pdu{'command'} }->{'attr_seq'};
     if ( !defined $template ) {
         warn "Unknown command: $pdu{'command'}\n";
@@ -298,8 +303,12 @@ sub unpack_pdu {
         next if $attr_name eq 'short_message';
         $pdu{$attr_name} = $options[$idx];
 
-        my $attr_len = length $options[$idx];
-        $body_len += $attr_len > 1 ? $attr_len + 1 : 1;
+        if ( $template[$idx] eq 'Z*' ) {
+            $body_len += 1 + length $options[$idx];
+        }
+        elsif ( $template[$idx] eq 'C' ) {
+            $body_len++;
+        }
     }
 
     if ( exists $pdu{'sm_length'} ) {
