@@ -17,6 +17,7 @@ my $pdu = {
     esme_addr        => '380504139380',
     short_message    => q{},
     message_state    => 2,
+    short_message    => 'yeynAymyath6 TykUshcajag9 NobOnOis7 addOrman4',
 };
 
 my $ref_dir = File::Spec->catfile( $Bin, 'ref_packets' );

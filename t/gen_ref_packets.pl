@@ -73,13 +73,13 @@ sub send_smpp_packets {
     $cli->bind_transmitter_resp( seq => 28 );
     $cli->query_sm( message_id => 44, seq => 28 );
     $cli->query_sm_resp( message_state => 2, message_id => 44, seq => 28 );
-    $cli->submit_sm( destination_addr => '380504139380', seq => 28 );
+    $cli->submit_sm( destination_addr => '380504139380', seq => 28, short_message => 'yeynAymyath6 TykUshcajag9 NobOnOis7 addOrman4' );
     $cli->submit_sm_resp( message_id => 44, seq => 28 );
-    $cli->deliver_sm( destination_addr => '380504139380', seq => 28 );
+    $cli->deliver_sm( destination_addr => '380504139380', seq => 28, short_message => 'yeynAymyath6 TykUshcajag9 NobOnOis7 addOrman4' );
     $cli->deliver_sm_resp( message_id => 44, seq => 28 );
     $cli->unbind( seq => 28 );
     $cli->unbind_resp( seq => 28 );
-    $cli->replace_sm( message_id => 44, seq => 28 );
+    $cli->replace_sm( message_id => 44, seq => 28, short_message => 'yeynAymyath6 TykUshcajag9 NobOnOis7 addOrman4' );
     $cli->replace_sm_resp( seq => 28 );
     $cli->cancel_sm( destination_addr => '380504139380', message_id => 44, seq => 28 );
     $cli->cancel_sm_resp( seq => 28 );
